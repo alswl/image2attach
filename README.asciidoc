@@ -11,7 +11,38 @@ It can create a page action to save images from web to page's attachments.
 
 Install
 -------
-TODO
+
+* copy files to data/plugin/action/
+* edit MoinMoin/theme/__init__.py
+
+----
+menu = [
+	'raw',
+	'print',
+	'RenderAsDocbook',
+	'Image2Attach', # <- add here
+
+titles = {
+	# action: menu title
+	'__title__': _("More Actions:", formatted=False),
+	# Translation may need longer or shorter separator
+	'__separator__': _('------------', formatted=False),
+	'raw': _('Raw Text', formatted=False),
+	'print': _('Print View', formatted=False),
+	'refresh': _('Delete Cache', formatted=False),
+	'SpellCheck': _('Check Spelling', formatted=False), # rename action!
+	'RenamePage': _('Rename Page', formatted=False),
+	'DeletePage': _('Delete Page', formatted=False),
+	'LikePages': _('Like Pages', formatted=False),
+	'LocalSiteMap': _('Local Site Map', formatted=False),
+	'MyPages': _('My Pages', formatted=False),
+	'SubscribeUser': _('Subscribe User', formatted=False),
+	'Despam': _('Remove Spam', formatted=False),
+	'PackagePages': _('Package Pages', formatted=False),
+	'RenderAsDocbook': _('Render as Docbook', formatted=False),
+	'Image2Attach': _('Image2Attach'), # <- add here
+	}
+----
 
 Usage
 -----
