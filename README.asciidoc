@@ -1,0 +1,21 @@
+Image2Attach
+============
+
+:author: alswl
+
+What's this
+-----------
+
+Image2Attach is a extension for http:moinmo.in[MoinMoin].
+It can create a page action to save images from web to page's attachments.
+
+Install
+-------
+TODO
+
+Usage
+-----
+
+TODO
+
+// vim: set ft=asciidoc:
