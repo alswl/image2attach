@@ -38,6 +38,7 @@ class Image2Attach:
         """match all internet image url from raw"""
         transcludes = []
         for line in self.page.get_raw_body().splitlines():
+            line = line.strip()
             match = WikiParser.scan_re.match(line)
             if match != None:
                transclude = match.groupdict().get('transclude', '')
