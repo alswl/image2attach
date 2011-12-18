@@ -12,8 +12,9 @@ It can create a page action to save images from web to page's attachments.
 Install
 -------
 
-* copy files to data/plugin/action/
+* copy action/* to data/plugin/action/
 * edit MoinMoin/theme/__init__.py
+* restart python server
 
 ----
 menu = [
@@ -47,6 +48,19 @@ titles = {
 Usage
 -----
 
-TODO
+Go into a page, click `more action` - `Image2Attach` .
+It will take a while to fetch the images,
+after that it will save the image to attachments and replace the
+image's link with attachment's link.
+Finnally it will commit a change with message
+\'internet image save to attachment' to wiki.
+
+Enjoy it, any bugs can report to https://github.com/alswl/image2attach/issues[
+Issue Report].
+
+Links
+-----
+
+You can get some develop infomation in http://log4d.com/tag/image2attach .
 
 // vim: set ft=asciidoc:
