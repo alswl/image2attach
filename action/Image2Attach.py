@@ -30,29 +30,32 @@ class Image2Attach:
         self.request = request
         self.page = Page(request, pagename)
         self.image_urls = []
-        self.images = {}
-        self.process_success = 0
-        self.process_fail = 0
+        self.images = {} # image binay files {filename: content}
+        self.images_fetched = [] # images successful fetched
+        self.process_success = 0 # count of process successful
+        self.process_fail = 0 # count of process failed
 
     def execute(self):
         self.getImageUrls()
         self.fetchImages()
+        #logging.info('****************************')
         #logging.info(self.images)
-        logging.info('****************************')
-        logging.info(self.images.keys())
         self.addAttachment()
-        logging.info(self.image_urls)
+        result = self.replaceImages()
+        if self.process_success > 0:
+            PageEditor(self.request, self.pagename)._write_file(
+                result,
+                comment=u'internet image save to attachment',
+                )
 
     def getImageUrls(self):
         """match all internet image url from raw"""
         transcludes = []
-        for line in self.page.get_raw_body().splitlines():
+        for line in WikiParser.eol_re.split(self.page.get_raw_body()):
             line = line.strip()
             match = WikiParser.scan_re.match(line)
             if match != None:
                 transclude = match.groupdict().get('transclude', '')
-                #logging.info('transclude')
-                #logging.info(transclude )
                 if transclude != None and transclude.find('attachment') < 0:
                     # not attachment image ye
                     transcludes.append(transclude)
@@ -71,21 +74,36 @@ class Image2Attach:
     def addAttachment(self):
         """add image to attachment"""
         for name, image in self.images.items():
-            AttachFile.add_attachment(
-                self.request,
-                self.pagename,
-                name,
-                image,
-                )
+            if not AttachFile.exists(self.request,
+                                     self.pagename,
+                                     wikiutil.taintfilename(name)):
+                AttachFile.add_attachment(self.request,
+                                          self.pagename,
+                                          name,
+                                          image)
 
     def replaceImages(self):
         """edit the raw, replace image url with attachment url"""
-        files = AttachFile._get_files(self.request, self.pagename)
-        attach_dir = AttachFile.getAttachDir(self.request, self.pagename)
 
-        newtext = ''
-        #PageEditor(self.request, self.pagename).saveText(newtext, 0) #XXX 0
-        pass
+        result = ''
+        for line in WikiParser.eol_re.split(self.page.get_raw_body()):
+            # save the ident
+            indent = WikiParser.indent_re.match(line).group(0)
+            result += indent + self.replaceImageLine(line.strip())
+        logging.info('****************************')
+        logging.info(result)
+        return result
+
+    def replaceImageLine(self, line):
+        """replace one line image url with attachment, else will return"""
+        match = WikiParser.scan_re.match(line)
+        if match != None:
+            transclude = match.groupdict().get('transclude', '')
+            if transclude != None and transclude.find('attachment') < 0:
+                url = self.image_url_re.findall(transclude)[0]
+                line = line.replace(url, 'attachment:' + wikiutil.taintfilename(url))
+                self.process_success += 1
+        return line + '\n'
 
 def execute(pagename, request):
     """
@@ -94,6 +112,15 @@ def execute(pagename, request):
     #TODO add auth control
     _ = request.getText
     page = Page(request, pagename)
-    Image2Attach(pagename, request).execute()
-    request.theme.add_msg(_("images all saved"), "info")
+    image2attach = Image2Attach(pagename, request)
+    image2attach.execute()
+    request.theme.add_msg(
+        _(
+            "%d images saved successful, %d images saved failed" % (
+                image2attach.process_success,
+                image2attach.process_fail,
+            )
+        ),
+        "info"
+        )
     page.send_page()
