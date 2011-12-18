@@ -9,6 +9,11 @@ What's this
 Image2Attach is a extension for http:moinmo.in[MoinMoin].
 It can create a page action to save images from web to page's attachments.
 
+Requirment
+----------
+
+* MoinMoin 1.9 (I only test in this version.)
+
 Install
 -------
 
