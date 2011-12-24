@@ -11,6 +11,7 @@
 
 import urllib2
 import re
+import os
 
 from MoinMoin import log
 from MoinMoin.Page import Page
@@ -34,19 +35,63 @@ class Image2Attach:
         self.images_fetched = [] # images successful fetched
         self.process_success = 0 # count of process successful
         self.process_fail = 0 # count of process failed
+        self.text = ''
+        self.image_extenstions = ['jpg', 'gif', 'png']
 
-    def execute(self):
-        self.getImageUrls()
-        self.fetchImages()
-        #logging.info('****************************')
-        #logging.info(self.images)
-        self.addAttachment()
-        result = self.replaceImages()
+    def process(self):
+        for line in WikiParser.eol_re.split(self.page.get_raw_body()):
+            self.process_line(line)
+        self.write_file()
+
+    def write_file(self):
+        """scommit changes"""
         if self.process_success > 0:
             PageEditor(self.request, self.pagename)._write_file(
-                result,
+                self.text,
                 comment=u'internet image save to attachment',
                 )
+
+    def process_line(self, line):
+        """process each line in wiki text"""
+        # save the ident
+        indent = WikiParser.indent_re.match(line).group(0)
+        if indent == None:
+            indent = '' ## FIXME bad smell
+        match = WikiParser.scan_re.match(line.strip())
+        if match != None:
+            for type, hit in match.groupdict().items():
+                # only process the type may contain images
+                if hit is not None:
+                    if type == 'transclude':
+                        line = self.process_transclude(line, match.groupdict())
+                    #elif type == 'link':
+                        #line = self.process_link(line, match.groupdict())
+        self.text += indent + line +'\n'
+
+    def process_transclude(self, line, groups):
+        """# {{http://xxx/xxx.jpg}}"""
+        transclude = groups.get('transclude', '')
+        if transclude != None and transclude.find('attachment') < 0:
+            try:
+                url = self.image_url_re.findall(transclude)[0]
+                image = self.fetchImage(url)
+                attachment_name = self.addAttachment(url, image)
+                self.process_success += 1
+            except:
+                self.process_fail += 1
+                return line
+            return line.replace(url,
+                                'attachment:' + attachment_name)
+            # remove the {{ and }}
+            #self.image_urls = [self.image_url_re.findall(x)[0] for x in transcludes]
+        else:
+            return line
+
+    def process_link(self, groups):
+        # [[link|{{image}}]]
+        target = groups.get('link_target', '')
+        desc = groups.get('link_desc', '') or ''
+        params = groups.get('link_params', u'') or u''
 
     def getImageUrls(self):
         """match all internet image url from raw"""
@@ -62,25 +107,27 @@ class Image2Attach:
         # remove the {{ and }}
         self.image_urls = [self.image_url_re.findall(x)[0] for x in transcludes]
 
-    def fetchImages(self):
+    def fetchImage(self, url):
         """save image to local"""
-        for url in self.image_urls:
-            try:
-                handler = urllib2.urlopen(url)
-                self.images[url] = handler.read()
-            except:
-                self.process_fail += 1
+        try:
+            handler = urllib2.urlopen(url)
+            return handler.read()
+        except Exception, e:
+            raise e # TODO add extract exception
+        #finally:
+            #handler.close()
 
-    def addAttachment(self):
+    def addAttachment(self, name, content):
         """add image to attachment"""
-        for name, image in self.images.items():
-            if not AttachFile.exists(self.request,
-                                     self.pagename,
-                                     wikiutil.taintfilename(name)):
-                AttachFile.add_attachment(self.request,
-                                          self.pagename,
-                                          name,
-                                          image)
+        if os.path.splitext(name)[1].lower() not in \
+           ['.' + x for x in self.image_extenstions]:
+            name += '.jpg' # if the url didn't contain a image extention
+        AttachFile.add_attachment(self.request,
+                                  self.pagename,
+                                  name,
+                                  content,
+                                  True)
+        return wikiutil.taintfilename(name)
 
     def replaceImages(self):
         """edit the raw, replace image url with attachment url"""
@@ -113,7 +160,7 @@ def execute(pagename, request):
     _ = request.getText
     page = Page(request, pagename)
     image2attach = Image2Attach(pagename, request)
-    image2attach.execute()
+    image2attach.process()
     request.theme.add_msg(
         _(
             "%d images saved successful, %d images saved failed" % (
