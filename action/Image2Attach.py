@@ -100,20 +100,22 @@ class Image2Attach:
                                                           match.groupdict())
                     line = line.replace(desc, attach_desc)
                     if os.path.splitext(target)[1].lower() in \
-                       ['.' + x for x in self.image_extenstions]:
-                        url = self.image_url_re.findall(target)[0]
-                        image = self.fetchImage(url)
-                        attachment_name = self.addAttachment(url, image)
+                       ['.' + x for x in self.image_extenstions] and \
+                       target[:10] != 'attachment':
+                        line = line.replace(
+                            target,
+                            self.process_image_url(target)
+                            )
                         self.process_success += 1
-                        logging.info('target_url')
-                        logging.info(url)
-                        line = line.replace(target,
-                                            'attachment:' + attachment_name)
         return line
 
-    def process_image_url(self, image_url):
-        ## TODO
-        return image_url
+    def process_image_url(self, transclude):
+        "download image and replace image url"""
+        logging.info('transclude')
+        logging.info(transclude)
+        url = self.image_url_re.findall(transclude)[0]
+        image = self.fetchImage(url)
+        return 'attachment:' + self.addAttachment(url, image)
 
     def getImageUrls(self):
         """match all internet image url from raw"""
@@ -159,8 +161,6 @@ class Image2Attach:
             # save the ident
             indent = WikiParser.indent_re.match(line).group(0)
             result += indent + self.replaceImageLine(line.strip())
-        logging.info('****************************')
-        logging.info(result)
         return result
 
     def replaceImageLine(self, line):
