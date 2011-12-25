@@ -71,7 +71,8 @@ class Image2Attach:
     def process_transclude(self, line, groups):
         """# {{http://xxx/xxx.jpg}}"""
         transclude = groups.get('transclude', '')
-        if transclude != None and transclude.find('attachment') < 0:
+        if transclude != None and \
+           not transclude.strip().startswith('{{attachment:'):
             try:
                 url = self.image_url_re.findall(transclude)[0]
                 image = self.fetchImage(url)
@@ -91,7 +92,8 @@ class Image2Attach:
         """[[link|{{image}}]]"""
         target = groups.get('link_target', '')
         desc = groups.get('link_desc', '') or ''
-        #params = groups.get('link_params', u'') or u''
+
+        # process image in link
         match = WikiParser.scan_re.match(desc.strip())
         if match != None:
             for type, hit in match.groupdict().items():
@@ -99,14 +101,16 @@ class Image2Attach:
                     attach_desc = self.process_transclude(desc,
                                                           match.groupdict())
                     line = line.replace(desc, attach_desc)
-                    if os.path.splitext(target)[1].lower() in \
-                       ['.' + x for x in self.image_extenstions] and \
-                       target[:10] != 'attachment':
-                        line = line.replace(
-                            target,
-                            self.process_image_url(target)
-                            )
-                        self.process_success += 1
+
+        # process target which url contains .jpg/.gif/.png
+        if os.path.splitext(target)[1].lower() in \
+           ['.' + x for x in self.image_extenstions] and \
+           target[:10] != 'attachment':
+            line = line.replace(
+                target,
+                self.process_image_url(target)
+                )
+            self.process_success += 1
         return line
 
     def process_image_url(self, transclude):
