@@ -88,7 +88,7 @@ class Image2Attach:
             return line
 
     def process_link(self, line, groups):
-        # [[link|{{image}}]]
+        """[[link|{{image}}]]"""
         target = groups.get('link_target', '')
         desc = groups.get('link_desc', '') or ''
         #params = groups.get('link_params', u'') or u''
@@ -99,6 +99,16 @@ class Image2Attach:
                     attach_desc = self.process_transclude(desc,
                                                           match.groupdict())
                     line = line.replace(desc, attach_desc)
+                    if os.path.splitext(target)[1].lower() in \
+                       ['.' + x for x in self.image_extenstions]:
+                        url = self.image_url_re.findall(target)[0]
+                        image = self.fetchImage(url)
+                        attachment_name = self.addAttachment(url, image)
+                        self.process_success += 1
+                        logging.info('target_url')
+                        logging.info(url)
+                        line = line.replace(target,
+                                            'attachment:' + attachment_name)
         return line
 
     def process_image_url(self, image_url):
