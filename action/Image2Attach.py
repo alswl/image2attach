@@ -64,9 +64,9 @@ class Image2Attach:
                 if hit is not None:
                     if type == 'transclude':
                         line = self.process_transclude(line, match.groupdict())
-                    #elif type == 'link':
-                        #line = self.process_link(line, match.groupdict())
-        self.text += indent + line +'\n'
+                    elif type == 'link':
+                        line = self.process_link(line, match.groupdict())
+        self.text += indent + line + '\n'
 
     def process_transclude(self, line, groups):
         """# {{http://xxx/xxx.jpg}}"""
@@ -87,11 +87,23 @@ class Image2Attach:
         else:
             return line
 
-    def process_link(self, groups):
+    def process_link(self, line, groups):
         # [[link|{{image}}]]
         target = groups.get('link_target', '')
         desc = groups.get('link_desc', '') or ''
-        params = groups.get('link_params', u'') or u''
+        #params = groups.get('link_params', u'') or u''
+        match = WikiParser.scan_re.match(desc.strip())
+        if match != None:
+            for type, hit in match.groupdict().items():
+                if hit is not None and type == 'transclude':
+                    attach_desc = self.process_transclude(desc,
+                                                          match.groupdict())
+                    line = line.replace(desc, attach_desc)
+        return line
+
+    def process_image_url(self, image_url):
+        ## TODO
+        return image_url
 
     def getImageUrls(self):
         """match all internet image url from raw"""
