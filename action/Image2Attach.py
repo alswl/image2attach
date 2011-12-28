@@ -110,16 +110,18 @@ class Image2Attach:
                 target,
                 self.process_image_url(target)
                 )
-            self.process_success += 1
         return line
 
     def process_image_url(self, transclude):
         "download image and replace image url"""
-        logging.info('transclude')
-        logging.info(transclude)
-        url = self.image_url_re.findall(transclude)[0]
-        image = self.fetchImage(url)
-        return 'attachment:' + self.addAttachment(url, image)
+        try:
+            url = self.image_url_re.findall(transclude)[0]
+            image = self.fetchImage(url)
+            self.process_success += 1
+            return 'attachment:' + self.addAttachment(url, image)
+        except Exception, e:
+            self.process_fail += 1
+            return transclude
 
     def getImageUrls(self):
         """match all internet image url from raw"""
@@ -138,7 +140,7 @@ class Image2Attach:
     def fetchImage(self, url):
         """save image to local"""
         try:
-            handler = urllib2.urlopen(url)
+            handler = urllib2.urlopen(url.encode('utf-8'))
             return handler.read()
         except Exception, e:
             raise e # TODO add extract exception
@@ -156,27 +158,6 @@ class Image2Attach:
                                   content,
                                   True)
         return wikiutil.taintfilename(name)
-
-    def replaceImages(self):
-        """edit the raw, replace image url with attachment url"""
-
-        result = ''
-        for line in WikiParser.eol_re.split(self.page.get_raw_body()):
-            # save the ident
-            indent = WikiParser.indent_re.match(line).group(0)
-            result += indent + self.replaceImageLine(line.strip())
-        return result
-
-    def replaceImageLine(self, line):
-        """replace one line image url with attachment, else will return"""
-        match = WikiParser.scan_re.match(line)
-        if match != None:
-            transclude = match.groupdict().get('transclude', '')
-            if transclude != None and transclude.find('attachment') < 0:
-                url = self.image_url_re.findall(transclude)[0]
-                line = line.replace(url, 'attachment:' + wikiutil.taintfilename(url))
-                self.process_success += 1
-        return line + '\n'
 
 def execute(pagename, request):
     """
