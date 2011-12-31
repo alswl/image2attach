@@ -2,7 +2,7 @@
 # coding:utf-8
 
 """
-    MoinMoin Extention: image2attach v0.0.1
+    MoinMoin Extention: image2attach v0.0.3
     Descption: Save page's images to attachments
     @author: alswl <http://log4d.com>
     @date: 2011-12-31
