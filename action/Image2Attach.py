@@ -5,7 +5,7 @@
     MoinMoin Extention: image2attach v0.0.1
     Descption: Save page's images to attachments
     @author: alswl <http://log4d.com>
-    @date: 2011-12-17
+    @date: 2011-12-31
     @license: GNU GPL, see COPYING for details.
 """
 
@@ -45,10 +45,14 @@ class Image2Attach:
 
     def write_file(self):
         """scommit changes"""
+        _ = self.request.getText
         if self.process_success > 0:
             PageEditor(self.request, self.pagename)._write_file(
                 self.text,
-                comment=u'internet image save to attachment',
+                comment=_(
+                    'save images to attachment: %d successful, %d faild' \
+                    %(self.process_success, self.process_fail)
+                    ),
                 )
 
     def process_line(self, line):
@@ -72,19 +76,10 @@ class Image2Attach:
         """# {{http://xxx/xxx.jpg}}"""
         transclude = groups.get('transclude', '')
         if transclude != None and \
-           not transclude.strip().startswith('{{attachment:'):
-            try:
-                url = self.image_url_re.findall(transclude)[0]
-                image = self.fetchImage(url)
-                attachment_name = self.addAttachment(url, image)
-                self.process_success += 1
-            except:
-                self.process_fail += 1
-                return line
-            return line.replace(url,
-                                'attachment:' + attachment_name)
-            # remove the {{ and }}
-            #self.image_urls = [self.image_url_re.findall(x)[0] for x in transcludes]
+           not transclude.strip().startswith('{{attachment:') and \
+           self.image_url_re.search(transclude) != None:
+                url = self.image_url_re.search(transclude).group(0)
+                return line.replace(url, self.process_image_url(url))
         else:
             return line
 
@@ -112,30 +107,16 @@ class Image2Attach:
                 )
         return line
 
-    def process_image_url(self, transclude):
+    def process_image_url(self, url):
         "download image and replace image url"""
         try:
-            url = self.image_url_re.findall(transclude)[0]
+            #url = self.image_url_re.findall(transclude)[0]
             image = self.fetchImage(url)
             self.process_success += 1
             return 'attachment:' + self.addAttachment(url, image)
         except Exception, e:
             self.process_fail += 1
-            return transclude
-
-    def getImageUrls(self):
-        """match all internet image url from raw"""
-        transcludes = []
-        for line in WikiParser.eol_re.split(self.page.get_raw_body()):
-            line = line.strip()
-            match = WikiParser.scan_re.match(line)
-            if match != None:
-                transclude = match.groupdict().get('transclude', '')
-                if transclude != None and transclude.find('attachment') < 0:
-                    # not attachment image ye
-                    transcludes.append(transclude)
-        # remove the {{ and }}
-        self.image_urls = [self.image_url_re.findall(x)[0] for x in transcludes]
+            return url
 
     def fetchImage(self, url):
         """save image to local"""
@@ -143,9 +124,8 @@ class Image2Attach:
             handler = urllib2.urlopen(url.encode('utf-8'))
             return handler.read()
         except Exception, e:
-            raise e # TODO add extract exception
-        #finally:
-            #handler.close()
+            logging.error(u'get %s failed' %url)
+            raise e
 
     def addAttachment(self, name, content):
         """add image to attachment"""
