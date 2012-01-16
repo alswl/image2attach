@@ -113,6 +113,7 @@ class Image2Attach:
             #url = self.image_url_re.findall(transclude)[0]
             image = self.fetchImage(url)
             self.process_success += 1
+            url = url.replace('%20', '') # fix '%20' -> ' ' bug
             return 'attachment:' + self.addAttachment(url, image)
         except Exception, e:
             self.process_fail += 1
