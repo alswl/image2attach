@@ -140,6 +140,97 @@ class Image2Attach:
                                   True)
         return wikiutil.taintfilename(name)
 
+class Parser(object):
+    """Transform the wiki where has image"""
+
+    image_url_rule = r'https?://[^|^}]+' # image url's regex rule
+    image_url_re = re.compile(image_url_rule, re.VERBOSE | re.UNICODE)
+    image_extenstions = ['jpg', 'gif', 'png']
+
+    def __init__(self):
+        pass
+
+    def parse(self, raw, callback):
+        text = ''
+        for line in WikiParser.eol_re.split(raw):
+            text += self.process_line(line, callback) + '\n'
+        return text[:-1]
+
+    def process_line(self, line, callback):
+        """process each line in wiki text"""
+        results = []
+        # save the indent
+        indent = WikiParser.indent_re.match(line).group(0) or ''
+        lastpos = 0 # absolute position within line
+
+        while lastpos <= len(line):
+            parser_scan_re = re.compile(
+                WikiParser.parser_scan_rule % re.escape(WikiParser.parser_unique),
+                re.VERBOSE|re.UNICODE
+            )
+            scan_re = None and parser_scan_re or WikiParser.scan_re
+            match = scan_re.search(line, lastpos)
+            if match != None:
+                for type, hit in match.groupdict().items():
+                    # only process the type may contain images
+                    if hit is not None:
+                        #if type in ('transclude', 'link'):
+                        if type == 'transclude':
+                            results.append(self.process_transclude(
+                                line[lastpos:match.end()],
+                                match.groupdict(),
+                                callback
+                            ))
+                        elif type == 'link':
+                            results.append(self.process_link(
+                                line[lastpos:match.end()],
+                                match.groupdict(),
+                                callback))
+                        elif type in ('transclude_target', 'link_target',
+                                      'link_desc'):
+                            continue
+                        else:
+                            results.append(line[lastpos:match.end()])
+                            break
+                lastpos = match.end()
+            else:
+                results.append(line[lastpos:])
+                break
+
+        return indent + ''.join(results)
+
+    def process_transclude(self, line, groups, callback):
+        """# {{http://xxx/xxx.jpg}}"""
+        transclude = groups.get('transclude', '')
+        if transclude != None \
+           and not transclude.strip().startswith('{{attachment:') \
+           and self.image_url_re.search(transclude) != None:
+            url = self.image_url_re.search(transclude).group(0)
+            line = line.replace(url, callback(url))
+        return line
+
+    def process_link(self, line, groups, callback):
+        """[[link|{{image}}]]"""
+        target = groups.get('link_target', '')
+        desc = groups.get('link_desc', '') or ''
+
+        # process image in link
+        match = WikiParser.scan_re.match(desc.strip())
+        if match != None:
+            for type, hit in match.groupdict().items():
+                if hit is not None and type == 'transclude':
+                    attach_desc = self.process_transclude(desc,
+                                                          match.groupdict(),
+                                                          callback)
+                    line = line.replace(desc, attach_desc)
+
+        # process target which url contains .jpg/.gif/.png
+        if os.path.splitext(target)[1].lower() in \
+           ['.' + x for x in self.image_extenstions] and \
+           target[:10] != 'attachment':
+            line = line.replace(target, callback(target))
+        return line
+
 def execute(pagename, request):
     """
     save images to attachments
