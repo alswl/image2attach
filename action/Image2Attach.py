@@ -153,7 +153,7 @@ class Parser(object):
         """# {{http://xxx/xxx.jpg}}"""
         target = groups.get('transclude_target', '')
         if target != None \
-           and not target.strip().startswith('{{attachment:'):
+           and not target.startswith('attachment:'):
             line = line.replace(target, callback(target))
         return line
 
@@ -163,7 +163,7 @@ class Parser(object):
         desc = groups.get('link_desc', '') or ''
 
         # process image in link
-        match = WikiParser.scan_re.match(desc.strip())
+        match = WikiParser.scan_re.match(desc)
         if match != None:
             for type, hit in match.groupdict().items():
                 if hit is not None and type == 'transclude':
@@ -173,9 +173,9 @@ class Parser(object):
                     line = line.replace(desc, attach_desc)
 
         # process target which url contains .jpg/.gif/.png
-        if os.path.splitext(target)[1].lower() in \
-           ['.' + x for x in self.image_extenstions] and \
-           target[:10] != 'attachment':
+        if os.path.splitext(target)[1].lower() \
+           in ['.' + x for x in self.image_extenstions] \
+           and not target.startswith('attachment'):
             line = line.replace(target, callback(target))
         return line
 
