@@ -58,5 +58,14 @@ class ParserTest(unittest.TestCase):
         self.assertEqual(Parser().parse(html, lambda x: 'attachment:#%s#' %x),
                          u'[[attachment:#%s#|{{attachment:#%s#}}]]' %(url1, url2))
 
+    def test7(self):
+        url = u'https://pic002.cnblogs.com/images/2011/125698/2011011817563992.Jpg'
+        html = u"""
+来看一个经典的三栏布局：<<BR>> {{%s}} <<BR>> 从内容出发（[[http://lifesinger.org/blog/?p=298|渐进增强]]的核心思想），一份合理的HTML结构如下：
+        """.strip() %(url)
+        #import ipdb; ipdb.set_trace()
+        self.assertEqual(Parser().parse(html, lambda x: 'attachment:#%s#' %x),
+                         html.replace(url, 'attachment:#%s#' %url))
+
 if __name__ == '__main__':
     unittest.main()
