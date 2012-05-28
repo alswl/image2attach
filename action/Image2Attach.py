@@ -115,7 +115,7 @@ class Parser(object):
         """process each line in wiki text"""
         results = []
         # save the indent
-        indent = WikiParser.indent_re.match(line).group(0) or ''
+        #indent = WikiParser.indent_re.match(line).group(0) or ''
         lastpos = 0 # absolute position within line
 
         while lastpos <= len(line):
@@ -153,7 +153,7 @@ class Parser(object):
                 results.append(line[lastpos:])
                 break
 
-        return indent + ''.join(results)
+        return ''.join(results)
 
     def process_transclude(self, line, groups, callback):
         """# {{http://xxx/xxx.jpg}}"""
