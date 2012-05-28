@@ -67,5 +67,20 @@ class ParserTest(unittest.TestCase):
         self.assertEqual(Parser().parse(html, lambda x: 'attachment:#%s#' %x),
                          html.replace(url, 'attachment:#%s#' %url))
 
+    def test8(self):
+        url = u'http://img.neoease.org/2012/04/tortoisesvn-add-mime.png'
+        html = u"""
+TortoiseSVN 和 Eclipse 等一类客户端可以对文件的属性进行设定. 以下是 TortoiseSVN 中的修改方式.
+
+{{%s|在 TortoiseSVN 上修改 SVN 文件的 MIME 类型|width="600",height="180"}}
+
+ 1. 右击展开文件菜单, 选择 TortoiseSVN > Propertise.
+ 1. 添加或者修改 Mime-Type.
+ 1. 保存并提交 SVN.
+        """ %(url)
+        import pdb; pdb.set_trace()
+        self.assertEqual(Parser().parse(html, lambda x: 'attachment:#%s#' %x),
+                         html.replace(url, 'attachment:#%s#' %url))
+
 if __name__ == '__main__':
     unittest.main()

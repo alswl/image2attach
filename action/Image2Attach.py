@@ -24,7 +24,7 @@ from MoinMoin.action import AttachFile
 from MoinMoin import wikiutil
 from MoinMoin.parser.text_moin_wiki import Parser as WikiParser
 
-logging = log.getLogger(__name__)
+logger = log.getLogger(__name__)
 
 class Image2Attach:
 
@@ -77,7 +77,7 @@ class Image2Attach:
             handler = urllib2.urlopen(url.encode('utf-8'))
             return handler.read()
         except Exception, e:
-            logging.error(u'get %s failed' %url)
+            logger.error(u'get %s failed' %url)
             raise e
 
     def addAttachment(self, name, content):
@@ -101,6 +101,11 @@ class Parser(object):
         pass
 
     def parse(self, raw, callback):
+        """
+        parse the wiki
+            raw: wiki
+            callback: function to handle image
+        """
         text = ''
         for line in WikiParser.eol_re.split(raw):
             text += self.process_line(line, callback) + '\n'
@@ -136,8 +141,9 @@ class Parser(object):
                                 line[lastpos:match.end()],
                                 match.groupdict(),
                                 callback))
-                        elif type in ('transclude_target', 'link_target',
-                                      'link_desc'):
+                        elif type in ('transclude_target', 'transclude_params',
+                                      'transclude_desc',
+                                      'link_target', 'link_desc'):
                             continue
                         else:
                             results.append(line[lastpos:match.end()])
