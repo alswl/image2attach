@@ -54,7 +54,6 @@ class ParserTest(unittest.TestCase):
         url1 = u'http://pic002.cnblogs.com/images/2011/125698/2011011817563992_.png'
         url2 = u'https://pic002.cnblogs.com/images/2011/125698/2011011817563992.Jpg'
         html = u'[[%s|{{%s}}]]' %(url1, url2)
-        #import ipdb; ipdb.set_trace()
         self.assertEqual(Parser().parse(html, lambda x: 'attachment:#%s#' %x),
                          u'[[attachment:#%s#|{{attachment:#%s#}}]]' %(url1, url2))
 
@@ -63,7 +62,6 @@ class ParserTest(unittest.TestCase):
         html = u"""
 来看一个经典的三栏布局：<<BR>> {{%s}} <<BR>> 从内容出发（[[http://lifesinger.org/blog/?p=298|渐进增强]]的核心思想），一份合理的HTML结构如下：
         """.strip() %(url)
-        #import ipdb; ipdb.set_trace()
         self.assertEqual(Parser().parse(html, lambda x: 'attachment:#%s#' %x),
                          html.replace(url, 'attachment:#%s#' %url))
 
@@ -77,6 +75,15 @@ TortoiseSVN 和 Eclipse 等一类客户端可以对文件的属性进行设定. 
  1. 右击展开文件菜单, 选择 TortoiseSVN > Propertise.
  1. 添加或者修改 Mime-Type.
  1. 保存并提交 SVN.
+        """ %(url)
+        self.assertEqual(Parser().parse(html, lambda x: 'attachment:#%s#' %x),
+                         html.replace(url, 'attachment:#%s#' %url))
+
+    def test9(self):
+        url = u'http://1871.img.pp.sohu.com.cn/images/blog/2012/3/11/15/27/u82672385_136c116bdabg213.png'
+        html = u"""
+这将涉及到几个问题：
+{{%s||MARGIN="0px auto 10px",border="0",DISPLAY="block",TEXT-ALIGN="center"}}
         """ %(url)
         import pdb; pdb.set_trace()
         self.assertEqual(Parser().parse(html, lambda x: 'attachment:#%s#' %x),
