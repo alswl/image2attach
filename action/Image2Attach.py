@@ -11,7 +11,7 @@
     @license: GNU GPL, see COPYING for details.
 """
 
-__version__ = '0.0.4.1'
+__version__ = '0.0.4.2'
 
 import urllib2
 import re
